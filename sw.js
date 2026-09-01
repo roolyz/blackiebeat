@@ -1,12 +1,14 @@
-var C='bs1';
-self.addEventListener('install',function(e){
- e.waitUntil(caches.open(C).then(function(c){return c.addAll(['./','./manifest.webmanifest','./icon.svg','./engine.js','./audio.js','./game.js','./loop.js']);}));
- self.skipWaiting();});
-self.addEventListener('activate',function(){self.clients.claim();});
+var C='bs2';
+self.addEventListener('install',function(){self.skipWaiting();});
+self.addEventListener('activate',function(e){
+ e.waitUntil(caches.keys().then(function(k){
+  return Promise.all(k.map(function(n){return caches.delete(n);}));
+ }).then(function(){return self.clients.claim();}));});
 self.addEventListener('fetch',function(e){
- e.respondWith(caches.match(e.request).then(function(r){
-  return r||fetch(e.request).then(function(res){
-   return caches.open(C).then(function(c){
-    if(e.request.method==='GET')c.put(e.request,res.clone());
-    return res;});});
- }).catch(function(){return caches.match('./');}));});
+ e.respondWith(fetch(e.request).then(function(res){
+  var copy=res.clone();
+  caches.open(C).then(function(c){c.put(e.request,copy);});
+  return res;
+ }).catch(function(){
+  return caches.match(e.request).then(function(r){return r||caches.match('./');});
+ }));});
